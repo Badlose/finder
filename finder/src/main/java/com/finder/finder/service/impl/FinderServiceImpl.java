@@ -13,27 +13,28 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @Slf4j
 public class FinderServiceImpl implements FinderService {
 
     @Override
-    public Integer findNumber(String filePath, int n) {
+    public Long findNumber(String filePath, int n) {
         log.info("Find number was  called with params: [%s], [%s]".formatted(filePath, n));
         Path path = Paths.get(filePath);
         checkN(n);
         checkFilePath(path);
-        List<Integer> numbers = getNumbersFromXlsx(filePath);
+        List<Long> numbers = getNumbersFromXlsx(filePath);
         if (numbers.isEmpty()) {
             throw new FileHasNoNumbersException(path.toString());
         }
         if (n > numbers.size()) {
             throw new NIsGreaterThanTableMaxValueException(String.valueOf(n));
         }
-        List<Integer> copy = new ArrayList<>(numbers);
-        int result = scanNumbers(copy, 0, copy.size() - 1, n - 1);
+        long result = scanNumbers(numbers, 0, numbers.size() - 1, n - 1);
         log.info("Find number method result: [%s]".formatted(result));
         return result;
     }
@@ -53,8 +54,8 @@ public class FinderServiceImpl implements FinderService {
         }
     }
 
-    private List<Integer> getNumbersFromXlsx(String filePath) {
-        List<Integer> numbers = new ArrayList<>();
+    private List<Long> getNumbersFromXlsx(String filePath) {
+        Set<Long> uniqueNumbers = new HashSet<>();
         try (FileInputStream fileInputStream = new FileInputStream(filePath);
              Workbook workbook = WorkbookFactory.create(fileInputStream)) {
             Sheet sheet = workbook.getSheetAt(0);
@@ -62,10 +63,10 @@ public class FinderServiceImpl implements FinderService {
                 Cell cell = row.getCell(0);
                 if (cell != null) {
                     if (cell.getCellType() == CellType.NUMERIC) {
-                        int value = (int) cell.getNumericCellValue();
-                        numbers.add(value);
+                        long value = (long) cell.getNumericCellValue();
+                        uniqueNumbers.add(value);
                     } else {
-                        throw new IncorrectCellFormatException(cell.getStringCellValue());
+                        throw new IncorrectCellFormatException(cell.getCellType().toString());
                     }
                 }
             }
@@ -74,10 +75,10 @@ public class FinderServiceImpl implements FinderService {
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage());
         }
-        return numbers;
+        return new ArrayList<>(uniqueNumbers);
     }
 
-    private int scanNumbers(List<Integer> numbers, int left, int right, int k) {
+    private long scanNumbers(List<Long> numbers, int left, int right, int k) {
         if (left == right) {
             return numbers.get(left);
         }
@@ -93,8 +94,8 @@ public class FinderServiceImpl implements FinderService {
         }
     }
 
-    private int partitioning(List<Integer> numbers, int left, int right, int pivotIndex) {
-        int currentValue = numbers.get(pivotIndex);
+    private int partitioning(List<Long> numbers, int left, int right, int pivotIndex) {
+        long currentValue = numbers.get(pivotIndex);
         swap(numbers, pivotIndex, right);
         int tempIndex = left;
         for (int i = left; i < right; i++) {
@@ -107,8 +108,8 @@ public class FinderServiceImpl implements FinderService {
         return tempIndex;
     }
 
-    private void swap(List<Integer> numbers, int i, int j) {
-        Integer temp = numbers.get(i);
+    private void swap(List<Long> numbers, int i, int j) {
+        long temp = numbers.get(i);
         numbers.set(i, numbers.get(j));
         numbers.set(j, temp);
     }

@@ -18,7 +18,7 @@ public class FinderController {
     }
 
     @PostMapping("/find")
-    public Integer findMinNNumber(
+    public Long findMinNNumber(
             @Parameter(description = "Аюсолютный путь к .xlsx файлу", required = true)
             @RequestParam String filePath,
             @Parameter(description = "Порядок минимального искомого числа (1 для наименьшего, 2 для второго по величине и т.д.)", required = true)
